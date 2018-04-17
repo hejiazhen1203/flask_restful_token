@@ -10,13 +10,12 @@ import json
 class Users(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, index=True, nullable=False)
+    username = db.Column(db.String(64), unique=True, nullable=False)
     password = db.Column(db.String(128))
-    # role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    # confirmed = db.Column(db.Boolean, default=False)
     name = db.Column(db.String(64))
-    email = db.Column(db.String(64), unique=True, index=True, nullable=False)
+    email = db.Column(db.String(64), unique=True, nullable=False)
     isAdmin = db.Column(db.Boolean, nullable=False, default=False)
+    group_id = db.Column(db.Integer, db.ForeignKey('groups.id'))
     token = db.Column(db.Text())
     about_me = db.Column(db.Text())
     member_since = db.Column(db.DateTime(), default=datetime.now)
@@ -72,6 +71,26 @@ class Users(UserMixin, db.Model):
         #        "username": self.username})
         # return rep
         return '<User %r>' % self.username
+
+class Groups(db.Model):
+    __tablename__ = 'groups'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    about = db.Column(db.Text())
+    gusers = db.relationship('Users', backref='group',
+                                lazy='dynamic')
+    @staticmethod
+    def add(group):
+        db.session.add(group)
+        return session_commit()
+    # 更新分组
+    def update(self):
+        return session_commit()
+    # 删除分组
+    @staticmethod
+    def delete(self, id):
+        self.query.filter_by(id=id).delete()
+        return session_commit()
 
 def session_commit():
     try:

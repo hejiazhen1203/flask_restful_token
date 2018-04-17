@@ -7,7 +7,7 @@ from datetime import datetime
 from flask import jsonify, request
 from flask_restful import Resource, abort
 
-from apps.users.models import Users
+from apps.users.models import Users, Groups
 import apps.common as common
 from apps.auth.auths import Auth
 def abort404():
@@ -31,6 +31,12 @@ def check_users(username,email):
         return 2    #用户名可用,邮箱不可用
     elif Users.query.filter_by(username=username).first() is not None and Users.query.filter_by(email=email).first() is not None:
         return 3    #用户名邮箱都不可用
+
+# 检查分组是否冲突
+def check_group(name):
+    if Groups.query.filter_by(name=name).first() is None:
+        return True  # 分组名可用
+
 #用户注册
 class Register(Resource):
     def get(self):
@@ -121,12 +127,91 @@ class DelUser(Resource):
                 result = common.falseReturn('权限不足.', "请求失败")
         else:
             result = common.falseReturn(iauth['data'], "请求失败")
+        return jsonify(result)
+#创建分组
+class CreatGroup(Resource):
+    def post(self):
+        iauth = Auth.identify(Auth, request)
+        if iauth['status']:
+            if iauth['data']['isAdmin']:
+                name = request.json.get('groupname')
+                about = request.json.get('about')
+                if check_group(name):
+                    group = Groups(name=name, about=about)
+                    res = Groups.add(group)
+                    if group.id:
+                        result = common.trueReturn({'id': group.id, 'name': group.name}, "请求成功")
+                    else:
+                        result = common.falseReturn(res, '请求失败')
+                else:
+                    result = common.falseReturn('该分组已存在', '请求失败')
+            else:
+                result = common.falseReturn('权限不足.', "请求失败")
+
+        else:
+            result = common.falseReturn(iauth['data'], "请求失败")
+        return jsonify(result)
+#删除分组
+class DelGroup(Resource):
+    def get(self, groupid):
+        iauth = Auth.identify(Auth, request)
+        if iauth['status']:
+            if iauth['data']['isAdmin']:
+                try:
+                    Groups.delete(Groups, groupid)
+                    result = common.trueReturn('删除分组成功.', "请求成功")
+                except Exception as e:
+                    result = common.falseReturn(e, "请求失败")
+            else:
+                result = common.falseReturn('权限不足.', "请求失败")
+        else:
+            result = common.falseReturn(iauth['data'], "请求失败")
         return result
+#更新分组
+class UpdGroup(Resource):
+    def post(self):
+        iauth = Auth.identify(Auth, request)
+        if iauth['status']:
+            try:
+                group = Groups.query.filter_by(id=request.json.get('id')).first()
+                if not check_group(request.json.get('groupname')):
+                    result = common.falseReturn('该分组名字已存在', "请求失败")
+                else:
+                    group.name = request.json.get('groupname')
+                    group.about = request.json.get('about')
+                    a = group.update()
+                    result = common.trueReturn('分组更新成功', "请求成功")
+            except Exception as e:
+                result = common.falseReturn(e, "请求失败")
+        else:
+            result = common.falseReturn(iauth['data'], "请求失败")
+        return jsonify(result)
+#分组列表
+class GroupList(Resource):
+    def get(self):
+        iauth = Auth.identify(Auth, request)
+        if iauth['status']:
+            try:
+                g_list = []
+                for g in Groups.query.all():
+                    g_list.append({"id": g.id,
+                                   "name": g.name,
+                                   "about": g.about,
+                                   })
+                result = common.trueReturn(g_list, u"请求成功")
+            except Exception as e:
+                result = common.falseReturn(e, "请求失败")
+        else:
+            result = common.falseReturn(iauth['data'], "请求失败")
+        return result
+
 class get_info(Resource):
     def get(self):
         result = Auth.identify(Auth, request)
         if result['status']:
-            result = common.trueReturn(result['data'], "请求成功")
+            user = Users.query.filter_by(username=result["data"]["username"]).first()
+            print user.group.gusers.all()
+            # Groups.delete(Groups, 1)
         else:
             result = common.falseReturn(result['data'], "请求失败")
         return jsonify(result)

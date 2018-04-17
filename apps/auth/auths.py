@@ -8,7 +8,7 @@ class Auth():
         try:
 
             payload = {
-                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=600),
+                'exp': datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=6000),
                 'iat': datetime.datetime.utcnow(),
                 'aud': 'JWT',
                 'data': {
