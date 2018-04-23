@@ -48,12 +48,30 @@ class Register(Resource):
         email = request.json.get('email')
         about_me = request.json.get('about_me')
         if check_users(username,email) == 1:
-            return jsonify(common.falseReturn("用户名已被占用", "用户注册失败"))
+            resp = {
+                "code": 10021,
+                "status": False,
+                "msg": "该用户名已被使用",
+                "data": ""
+            }
+            return jsonify(resp)
+            # return jsonify(common.falseReturn("用户名已被占用", "用户注册失败"))
         elif check_users(username,email) == 2:
-            return jsonify(common.falseReturn("该邮箱已经注册过", "用户注册失败"))
+            resp = {
+                "code": 10022,
+                "status": False,
+                "msg": "该邮箱已经注册过",
+                "data": ""
+            }
+            return jsonify(resp)
         elif check_users(username,email) == 3:
-            return jsonify(common.falseReturn("用户名邮箱都不可用", "用户注册失败"))
-
+            resp = {
+                "code": 10023,
+                "status": False,
+                "msg": "用户名邮箱都不可用",
+                "data": ""
+            }
+            return jsonify(resp)
         user = Users(username=username,
                      password=Users.hash_password(Users, password),
                      name=name,
@@ -61,14 +79,25 @@ class Register(Resource):
                      about_me=about_me,)
         res = Users.add(Users, user)
         if user.id:
-            returnUser = {
-                'id': user.id,
-                'username': user.username,
-                'email': user.email,
+            resp = {
+                "code": 0,
+                "status": True,
+                "msg": "注册成功",
+                "data": {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                }
             }
-            return jsonify(common.trueReturn(returnUser, "用户注册成功"))
+            return jsonify(resp)
         else:
-            return jsonify(common.falseReturn(res, '用户注册失败'))
+            resp = {
+                "code": 10020,
+                "status": False,
+                "msg": "用户注册失败",
+                "data": res
+            }
+            return jsonify(resp)
 #用户列表
 class UserList(Resource):
     def get(self):
@@ -85,12 +114,27 @@ class UserList(Resource):
                                    "member_since": str(u.member_since),
                                    "about_me": u.about_me,
                                    })
-                result = common.trueReturn(u_list, u"请求成功")
+                resp = {
+                    "code": 0,
+                    "status": True,
+                    "msg": "用户列表获取成功",
+                    "data": u_list
+                }
             except Exception as e:
-                result = common.falseReturn(e, "请求失败")
+                resp = {
+                    "code": 10031,
+                    "status": False,
+                    "msg": "用户列表获取失败",
+                    "data": e
+                }
         else:
-            result = common.falseReturn(iauth['data'], "请求失败")
-        return result
+            resp = {
+                "code": 10032,
+                "status": False,
+                "msg": "用户列表获取失败",
+                "data": iauth['data']
+            }
+        return jsonify(resp)
 #用户更新
 class UpdUser(Resource):
     def post(self):
@@ -103,31 +147,71 @@ class UpdUser(Resource):
                 user.email = request.json.get('email')
                 user.about_me = request.json.get('about_me')
                 a = user.update()
-                result = common.trueReturn('用户更新成功', "请求成功")
+                resp = {
+                    "code": 0,
+                    "status": True,
+                    "msg": "用户资料更新成功",
+                    "data": ""
+                }
             except Exception as e:
-                result = common.falseReturn(e, "请求失败")
+                resp = {
+                    "code": 10041,
+                    "status": False,
+                    "msg": "用户资料更新失败",
+                    "data": e
+                }
         else:
-            result = common.falseReturn(iauth['data'], "请求失败")
-        return jsonify(result)
+            resp = {
+                "code": 10042,
+                "status": False,
+                "msg": "用户资料更新失败",
+                "data": iauth['data']
+            }
+        return jsonify(resp)
 #用户删除
 class DelUser(Resource):
     def get(self,userid):
         iauth = Auth.identify(Auth, request)
         if iauth['status']:
             if userid == iauth['data']['id']:
-                return common.falseReturn('不能删除自己.', "请求失败")
+                resp = {
+                    "code": 10051,
+                    "status": False,
+                    "msg": "用户删除失败",
+                    "data": "不能删除自己"
+                }
 
             if iauth['data']['isAdmin']:
                 try:
                     Users.delete(Users, userid)
-                    result = common.trueReturn('用户删除成功.', "请求成功")
+                    resp = {
+                        "code": 0,
+                        "status": True,
+                        "msg": "用户删除成功",
+                        "data": ""
+                    }
                 except Exception as e:
-                    result = common.falseReturn(e, "请求失败")
+                    resp = {
+                        "code": 10052,
+                        "status": False,
+                        "msg": "用户删除失败",
+                        "data": e
+                    }
             else:
-                result = common.falseReturn('权限不足.', "请求失败")
+                resp = {
+                    "code": 10053,
+                    "status": False,
+                    "msg": "用户删除失败",
+                    "data": "权限不足"
+                }
         else:
-            result = common.falseReturn(iauth['data'], "请求失败")
-        return jsonify(result)
+            resp = {
+                "code": 10053,
+                "status": False,
+                "msg": "用户删除失败",
+                "data": iauth['data']
+            }
+        return jsonify(resp)
 #创建分组
 class CreatGroup(Resource):
     def post(self):

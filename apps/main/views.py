@@ -34,8 +34,29 @@ class Login(Resource):
                 # print a
                 # return jsonify(common.trueReturn('', "用户登录成功"))
                 token =  Auth.authenticate(Auth, user)
-                return jsonify(common.trueReturn(token, "用户登录成功"))
+                resp = {
+                    "code": 0,
+                    "status": True,
+                    "msg": "登录成功",
+                    "data": {
+                        "token": token,
+                        "name": user.name or user.username,
+                        "isAdmin": user.isAdmin
+                    }
+                }
+
             else:
-                return jsonify(common.falseReturn('', '用户或密码错误'))
+                resp = {
+                    "code": 10001,
+                    "status": False,
+                    "msg": "用户名或密码错误",
+                    "data": ""
+                }
         else:
-            return jsonify(common.falseReturn('', '用户不存在'))
+            resp = {
+                "code": 10001,
+                "status": False,
+                "msg": "用户名或密码错误",
+                "data": ""
+            }
+        return jsonify(resp)
